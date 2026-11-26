@@ -333,6 +333,13 @@ def _default_exclude(args):
     return None if getattr(args, "source", None) else ["tool"]
 
 
+def _listing_exclude(args):
+    """``list``/``browse`` hide every internal run (one-shot, kanban, tool) like the pickers do,
+    since one-shots carry no title (#156048); explicit ``--source`` still returns them."""
+    from hermes_cli.session_listing import hide_internal_sources
+    return None if getattr(args, "source", None) else hide_internal_sources(None)
+
+
 def _surface_reader(store):
     """``--source cli`` also matches a gateway row stored as ``local`` with that created surface."""
     from hermes_cli.gateway_session_store import SurfaceLabelReader
@@ -345,7 +352,7 @@ def _cmd_list(args, *, persistence=None):
     # page was cut without a second COUNT query (``--limit 0`` is ``LIMIT 0``: no rows, no probe).
     limit = args.limit
     sessions = _surface_reader(persistence).list_sessions_rich(
-        source=args.source, exclude_sources=_default_exclude(args), limit=limit + 1 if limit > 0 else limit,
+        source=args.source, exclude_sources=_listing_exclude(args), limit=limit + 1 if limit > 0 else limit,
     )
     truncated = limit > 0 and len(sessions) > limit
     sessions = sessions[:limit] if truncated else sessions
@@ -1015,7 +1022,7 @@ def _cmd_retitle_skills(args, *, persistence=None):
 def _cmd_browse(args, *, persistence=None):
     limit = getattr(args, "limit", 500) or 500
     sessions = _surface_reader(persistence).list_sessions_rich(
-        source=getattr(args, "source", None), exclude_sources=_default_exclude(args), limit=limit
+        source=getattr(args, "source", None), exclude_sources=_listing_exclude(args), limit=limit
     )
     if not sessions:
         persistence.close()
