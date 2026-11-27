@@ -26,7 +26,8 @@ Your request
   → Pick key from pool (round_robin / least_used / fill_first / random)
   → Send to provider
   → 429 rate limit?
-      → Plan/usage limit reached (e.g. ChatGPT/Codex "usage limit reached")?
+      → Plan/usage limit reached (e.g. ChatGPT/Codex "usage limit reached", or a Claude plan
+        window the response marks `rejected`)?
           → Rotate to next pool key immediately (no retry — the cap won't clear on retry)
       → Generic / transient 429?
           → Retry same key once (transient blip)
@@ -224,6 +225,11 @@ does not trigger this; an explicit `/model` switch cancels a pending switch-back
 one Claude model cools that credential down for *that model only* — the same key keeps serving every
 other Claude model, and `ANTHROPIC_API_KEY` / borrowed Claude Code tokens honour the same per-model
 cooldown. Billing (`402`, usage-limit) and auth (`401`) failures still bench the whole credential.
+A Claude subscription 429 that names a spent plan window (`anthropic-ratelimit-unified-status: rejected`,
+window in `anthropic-ratelimit-unified-representative-claim`) rotates on the first 429 instead of retrying
+the spent seat. An account-wide window (`five_hour`, `seven_day`) benches the whole credential, for every
+model, until the window's `anthropic-ratelimit-unified-reset`; a model-family window (`seven_day_opus`, …)
+benches that model only.
 
 **A dead OAuth login is reported, not benched.** When a refresh token is rejected for good
 (`invalid_grant`, `invalid_token`, `refresh_token_reused` — the token was revoked, or another program
