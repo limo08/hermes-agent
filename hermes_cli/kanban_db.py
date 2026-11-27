@@ -3449,7 +3449,7 @@ def request_changes(
                SET status = ?,
                    assignee = COALESCE(?, assignee),
                    claim_lock = NULL,
-                   claim_expires = NULL,
+                   claim_expires = NULL, last_failure_error = NULL,
                    worker_pid = NULL, worker_started_at = NULL
              WHERE id = ? AND status = 'running' AND current_run_id = ?
             """,
